@@ -8,7 +8,7 @@ oscar64 \- optimizing C/C++ cross-compiler for 6502 systems
 .RB [ \-v [ 1 | 2 | 3 ]]
 .RB { \-i= "\fIincludePath\fR}"
 .RB [ \-ii= "\fIincludePath\fR" ]
-.RB [ \-o= "\fIoutput.prg\fR" ]
+.RB [ \-o= "\fIoutput\fR" ]
 .RB [ \-rt= "\fIruntime.c\fR" ]
 .RB [ \-tf= "\fIformat\fR" ]
 .RB [ \-tm= "\fImachine\fR" ]
@@ -49,7 +49,7 @@ Set the include file search path.
 .BI \-ii= includePath
 Set the default include path (overrides built-in path).
 .TP
-.BI \-o= output.prg
+.BI \-o= output
 Specify output file name.
 .TP
 .BI \-rt= runtime.c
@@ -172,7 +172,10 @@ Set the output target format.
 .RS
 .TP
 prg
-Standard Commodore PRG format (default).
+Standard Commodore PRG format (default except for Atari targets).
+.TP
+xex
+Atari DOS executable format (default for \-tm=atari).
 .TP
 crt
 EasyFlash cartridge format.

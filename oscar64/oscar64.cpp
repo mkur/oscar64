@@ -96,7 +96,7 @@ void writeHelp(void)
 	printf("-Ox : optimize pointer arithmetic by blocking shorter arrays to not cross page boundaries\n");
 	printf("-g  : create source level debug info and add source line numbers to asm listing\n");
 	printf("-gp : create source level debug info and add source line numbers to asm listing and static profile data\n");
-	printf("-tf : target format, may be prg, crt or bin\n");
+	printf("-tf : target format, may be prg, xex, crt, crt8, crt16, crt32, bin or lzo\n");
 	printf("-tm : target machine\n");
 	printf("-d64 : create a d64 disk image\n");
 	printf("-f  : add a binary file to the disk image\n");
@@ -189,7 +189,7 @@ int main2(int argc, const char** argv)
 		diskPath[0] = 0;
 
 		char	targetFormat[20];
-		strcpy_s(targetFormat, "prg");
+		targetFormat[0] = 0;
 
 		char	targetMachine[20];
 		strcpy_s(targetMachine, "c64");
@@ -575,6 +575,15 @@ int main2(int argc, const char** argv)
 		else
 			compiler->mErrors->Error(loc, EERR_COMMAND_LINE, "Invalid target machine option", targetMachine);
 
+		if (!targetFormat[0])
+		{
+			if (compiler->mTargetMachine == TMACH_ATARI)
+				strcpy_s(targetFormat, "xex");
+			else
+				strcpy_s(targetFormat, "prg");
+		}
+		else if (!strcmp(targetFormat, "xex") && compiler->mTargetMachine != TMACH_ATARI)
+			compiler->mErrors->Error(loc, EERR_COMMAND_LINE, "XEX target format requires Atari target machine", targetMachine);
 
 		if (compiler->mTargetMachine >= TMACH_NES && compiler->mTargetMachine <= TMACH_NES_MMC3)
 		{
@@ -603,6 +612,14 @@ int main2(int argc, const char** argv)
 			compiler->mCompilerOptions |= COPT_TARGET_PRG;
 			compiler->AddDefine(Ident::Unique("OSCAR_TARGET_PRG"), "1");
 			compiler->AddDefine(Ident::Unique("OSCAR_BASIC_START"), basicStart);
+		}
+		else if (!strcmp(targetFormat, "xex"))
+		{
+			if (compiler->mTargetMachine == TMACH_ATARI)
+			{
+				compiler->mCompilerOptions |= COPT_TARGET_XEX;
+				compiler->AddDefine(Ident::Unique("OSCAR_TARGET_XEX"), "1");
+			}
 		}
 		else if (!strcmp(targetFormat, "crt"))
 		{
@@ -759,7 +776,7 @@ int main2(int argc, const char** argv)
 	}
 	else
 	{
-		printf("oscar64 [-h] {-i=includePath} [-o=output.prg] [-rt=runtime.c] [-tf=target] [-tm=machine] [-e] [-n] [-g] [-O(0|1|2|3)] [-pp] {-dSYMBOL[=value]} [-v] [-d64=diskname] {-f[z]=file.xxx} {source.c}\n");
+		printf("oscar64 [-h] {-i=includePath} [-o=output] [-rt=runtime.c] [-tf=target] [-tm=machine] [-e] [-n] [-g] [-O(0|1|2|3)] [-pp] {-dSYMBOL[=value]} [-v] [-d64=diskname] {-f[z]=file.xxx} {source.c}\n");
 
 		return 0;
 	}

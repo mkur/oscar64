@@ -33,6 +33,7 @@ static const uint64 COPT_TARGET_LZO = 1ULL << 38;
 static const uint64 COPT_TARGET_NES = 1ULL << 39;
 
 static const uint64 COPT_TARGET_CRT_EASYFLASH = 1ULL << 40;
+static const uint64 COPT_TARGET_XEX = 1ULL << 41;
 static const uint64 COPT_TARGET_CRT = COPT_TARGET_CRT8 | COPT_TARGET_CRT16 | COPT_TARGET_CRT32 | COPT_TARGET_CRT_EASYFLASH;
 
 
@@ -85,5 +86,4 @@ enum TargetMachine
 	TMACH_X16,
 	TMACH_MEGA65
 };
-
 

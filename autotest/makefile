@@ -2,7 +2,7 @@ SRCS=$(filter-out ambiguousoverload_trigger.c opp_part1.cpp opp_part2.cpp, $(wil
 EXES=$(patsubst %.c,%,$(SRCS))
 EXES:=$(patsubst %.cpp,%,$(EXES))
 
-all: $(EXES) diskimagefulltest
+all: $(EXES) diskimagefulltest atarixexformattest
 
 DISK_FULL_RESOURCE=../samples/resources/blumba2.bin
 DISK_FULL_FILES=$(foreach n,1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18,-f=$(DISK_FULL_RESOURCE))
@@ -16,6 +16,18 @@ diskimagefulltest:
 		printf 'Expected disk-capacity error and exit status 20, got %s\n' "$$status"; \
 		exit 1; \
 	fi
+
+.PHONY: atarixexformattest
+atarixexformattest:
+	@$(OSCAR64_CC) -tm=atari -n -O2 -o=atari_xex_default.out bsstest.c
+	@$(OSCAR64_CC) -tm=atari -tf=xex -n -O2 -o=atari_xex_explicit.out bsstest.c
+	@bytes=`od -An -tx1 -N2 atari_xex_default.xex | tr -d '[:space:]'`; \
+	if [ "$$bytes" != "ffff" ]; then \
+		printf 'Expected Atari XEX header ffff, got %s\n' "$$bytes"; \
+		exit 1; \
+	fi
+	@cmp atari_xex_default.xex atari_xex_explicit.xex
+	@$(RM) atari_xex_default.* atari_xex_explicit.*
 
 %: %.c
 	$(OSCAR64_CC) -ea -g -bc $<
@@ -109,4 +121,4 @@ variadic-macros: variadic_macros.c
 	$(OSCAR64_CC) -eai -g -O3 -n $<
 
 clean:
-	@$(RM) *.asm *.bcs *.d64 *.int *.lbl *.map *.prg
+	@$(RM) *.asm *.bcs *.d64 *.int *.lbl *.map *.prg *.xex

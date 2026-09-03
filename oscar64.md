@@ -103,9 +103,9 @@ To build everything:
 
 ## Compiler arguments
 
-The compiler is command line driven, and creates an executable .prg file.
+The compiler is command line driven, and creates an executable output file.
 
-    oscar64 {-i=includePath} [-o=output.prg] [-rt=runtime.c] [-tf=format] [-tm=machine] [-e] [-n] [-dSYMBOL[=value]] {source.c|source.cpp}
+    oscar64 {-i=includePath} [-o=output] [-rt=runtime.c] [-tf=format] [-tm=machine] [-e] [-n] [-dSYMBOL[=value]] {source.c|source.cpp}
     
 * -v : verbose output for diagnostics
 * -v2 : more verbose output
@@ -134,7 +134,7 @@ The compiler is command line driven, and creates an executable .prg file.
 * -OM : enable generation of self modifying code
 * -g : create source level debug info and add source line numbers to asm listing
 * -gp : create source level debug info and add source line numbers to asm listing and static profile data
-* -tf : target format, may be prg, crt or bin
+* -tf : target format, may be prg, xex, crt, crt8, crt16, crt32, bin or lzo. XEX is the default for Atari; PRG is the default otherwise.
 * -tm : target machine
 * -d64 : create a d64 disk image
 * -f : add a binary file to the disk image
@@ -183,6 +183,10 @@ A list of source files can be provided.
 * atari : Atari 8bit systems, (0x2000..0xbc00)
 * x16 : Commander X16, (0x0800..0x9f00)
 * mega65 : Mega 65, (0x2000..0xc000)
+
+### Atari executable format
+
+* -tf=xex : creates an Atari DOS executable with a load segment and RUNAD vector. This is the default for -tm=atari.
 
 ### C64/C128 Cartridge formats
 
@@ -1747,6 +1751,4 @@ The store is moved into the basic block that joins the two branches
 #### Peephole optimizations
 
 Various small and local optimizations are performed on the code on a per basic block level.
-
-
 

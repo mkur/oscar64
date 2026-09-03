@@ -586,7 +586,7 @@ bool Compiler::GenerateCode(void)
 
 	if (!regionStartup)
 	{
-		if (mCompilerOptions & (COPT_TARGET_PRG | COPT_TARGET_NES))
+		if (mCompilerOptions & (COPT_TARGET_PRG | COPT_TARGET_XEX | COPT_TARGET_NES))
 		{
 			switch (mTargetMachine)
 			{
@@ -1425,22 +1425,19 @@ bool Compiler::WriteOutputFile(const char* targetPath, DiskImage * d64)
 	strcat_s(dbjPath, "dbj");
 	strcat_s(cszPath, "csz");
 
-	if (mCompilerOptions & COPT_TARGET_PRG)
+	if (mCompilerOptions & COPT_TARGET_XEX)
 	{
-		if (mTargetMachine == TMACH_ATARI)
-		{
-			strcat_s(prgPath, "xex");
-			if (mCompilerOptions & COPT_VERBOSE)
-				printf("Writing <%s>\n", prgPath);
-			mLinker->WriteXexFile(prgPath);
-		}
-		else
-		{
-			strcat_s(prgPath, "prg");
-			if (mCompilerOptions & COPT_VERBOSE)
-				printf("Writing <%s>\n", prgPath);
-			mLinker->WritePrgFile(prgPath, basePath);
-		}
+		strcat_s(prgPath, "xex");
+		if (mCompilerOptions & COPT_VERBOSE)
+			printf("Writing <%s>\n", prgPath);
+		mLinker->WriteXexFile(prgPath);
+	}
+	else if (mCompilerOptions & COPT_TARGET_PRG)
+	{
+		strcat_s(prgPath, "prg");
+		if (mCompilerOptions & COPT_VERBOSE)
+			printf("Writing <%s>\n", prgPath);
+		mLinker->WritePrgFile(prgPath, basePath);
 	}
 	else if (mCompilerOptions & COPT_TARGET_CRT)
 	{
