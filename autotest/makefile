@@ -19,8 +19,8 @@ diskimagefulltest:
 
 .PHONY: atarixexformattest
 atarixexformattest:
-	@$(OSCAR64_CC) -tm=atari -n -O2 -o=atari_xex_default.out bsstest.c
-	@$(OSCAR64_CC) -tm=atari -tf=xex -n -O2 -o=atari_xex_explicit.out bsstest.c
+	@$(OSCAR64_CC) -tm=atari -o=atari_xex_default.out ../samples/stdio/helloworld.c
+	@$(OSCAR64_CC) -tm=atari -tf=xex -o=atari_xex_explicit.out ../samples/stdio/helloworld.c
 	@bytes=`od -An -tx1 -N2 atari_xex_default.xex | tr -d '[:space:]'`; \
 	if [ "$$bytes" != "ffff" ]; then \
 		printf 'Expected Atari XEX header ffff, got %s\n' "$$bytes"; \
