@@ -43,6 +43,7 @@ void dispmode80col(void);
 #define PETSCII_F7				0x88
 #define PETSCII_F8				0x8c
 
+// Logical colors are mapped to the closest palette entry on each target.
 enum ConioColors
 {
 	COLOR_BLACK,
@@ -111,4 +112,3 @@ inline void textcursor(bool show);
 #pragma compile("conio.c")
 
 #endif
-

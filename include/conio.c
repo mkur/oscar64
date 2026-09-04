@@ -94,6 +94,24 @@ __asm bsinit
 #define ATARI_COLCRS	0x0055
 #define ATARI_CRSINH	0x02f0
 #define ATARI_CH		0x02fc
+#define ATARI_COLOR1	0x02c5
+#define ATARI_COLOR2	0x02c6
+#define ATARI_COLOR4	0x02c8
+
+static char		gatrevers;
+
+static const char gatcolors[16] = {
+	0x00, 0x0e, 0x32, 0x96, 0x68, 0xc4, 0x74, 0xee,
+	0x4a, 0xe4, 0x3c, 0x04, 0x06, 0xcc, 0x7c, 0x0a
+};
+
+static char atcolor(char c)
+{
+	if (c < 16)
+		return gatcolors[c];
+	else
+		return c;
+}
 
 __asm bsout
 {
@@ -216,6 +234,7 @@ void putpch(char c)
 #if defined(__ATARI__)
 	if (giocharmap >= IOCHM_ASCII && c == '\n')
 		c = ATASCII_EOL;
+	c |= gatrevers;
 #else
 	if (giocharmap >= IOCHM_ASCII)
 	{
@@ -332,10 +351,14 @@ char getche(void)
 	} while (!ch);
 #endif
 
+#if defined(__ATARI__)
+	putrch(ch | gatrevers);
+#else
 	__asm {
 		lda ch
 		jsr	bsout
 	}
+#endif
 
 	return convch(ch);
 }
@@ -439,25 +462,42 @@ void gotoxy(char cx, char cy)
 
 void textcolor(char c)
 {
+#if defined(__ATARI__)
+	// In ANTIC mode 2, COLOR2 supplies the hue and COLOR1 the text luminance.
+	*(volatile char *)ATARI_COLOR1 = atcolor(c) & 0x0e;
+#else
 	*(volatile char *)0x0286 = c;
+#endif
 }
 
 void bgcolor(char c)
 {
+#if defined(__ATARI__)
+	*(volatile char *)ATARI_COLOR2 = atcolor(c);
+#else
 	*(volatile char *)0xd021 = c;
+#endif
 }
 
 void bordercolor(char c)
 {
+#if defined(__ATARI__)
+	*(volatile char *)ATARI_COLOR4 = atcolor(c);
+#else
 	*(volatile char *)0xd020 = c;
+#endif
 }
 
 void revers(char r)
 {
+#if defined(__ATARI__)
+	gatrevers = r ? 0x80 : 0;
+#else
 	if (r) 
 		putrch(18);
 	else
 		putrch(18 + 128);
+#endif
 }
 
 char wherex(void)
