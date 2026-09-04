@@ -93,6 +93,7 @@ __asm bsinit
 #define ATARI_ROWCRS	0x0054
 #define ATARI_COLCRS	0x0055
 #define ATARI_CRSINH	0x02f0
+#define ATARI_CH		0x02fc
 
 __asm bsout
 {
@@ -117,6 +118,14 @@ __asm bsget
 		lda	0xe405
 		pha
 		lda 0xe404
+		pha
+}
+
+__asm bskey
+{
+		lda	0xe425
+		pha
+		lda 0xe424
 		pha
 }
 
@@ -289,7 +298,9 @@ char getpch(void)
 
 char kbhit(void)
 {
-#if defined(__CBMPET__)
+#if defined(__ATARI__)
+	return *(volatile char *)ATARI_CH != 0xff;
+#elif defined(__CBMPET__)
 	return __asm
 	{
 		lda $9e
@@ -306,6 +317,12 @@ char kbhit(void)
 
 char getche(void)
 {
+#if defined(__ATARI__)
+	char ch = __asm {
+		jsr	bskey
+		sta accu
+	};
+#else
 	char ch;
 	do {
 		ch = __asm {
@@ -313,6 +330,7 @@ char getche(void)
 			sta accu
 		};		
 	} while (!ch);
+#endif
 
 	__asm {
 		lda ch
@@ -324,6 +342,12 @@ char getche(void)
 
 char getch(void)
 {
+#if defined(__ATARI__)
+	char ch = __asm {
+		jsr	bskey
+		sta accu
+	};
+#else
 	char ch;
 	do {
 		ch = __asm {
@@ -331,16 +355,27 @@ char getch(void)
 			sta accu
 		};
 	} while (!ch);
+#endif
 
 	return convch(ch);
 }
 
 char getchx(void)
 {
+#if defined(__ATARI__)
+	if (!kbhit())
+		return 0;
+
+	char ch = __asm {
+		jsr	bskey
+		sta accu
+	};
+#else
 	char ch = __asm {
 		jsr	bsin
 		sta accu
 	};
+#endif
 
 	return convch(ch);
 }
