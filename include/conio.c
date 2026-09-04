@@ -87,6 +87,13 @@ __asm bsinit
 }
 #pragma code(code)
 #elif defined(__ATARI__)
+#define ATASCII_CLEAR	0x7d
+#define ATASCII_EOL	0x9b
+
+#define ATARI_ROWCRS	0x0054
+#define ATARI_COLCRS	0x0055
+#define ATARI_CRSINH	0x02f0
+
 __asm bsout
 {
 		tax
@@ -198,8 +205,8 @@ void putrch(char c)
 void putpch(char c)
 {
 #if defined(__ATARI__)
-	if (c == 10)
-		c = 0x9b;
+	if (giocharmap >= IOCHM_ASCII && c == '\n')
+		c = ATASCII_EOL;
 #else
 	if (giocharmap >= IOCHM_ASCII)
 	{
@@ -241,7 +248,10 @@ void putpch(char c)
 
 static char convch(char ch)
 {
-#if !defined(__ATARI__)
+#if defined(__ATARI__)
+	if (giocharmap >= IOCHM_ASCII && ch == ATASCII_EOL)
+		ch = '\n';
+#else
 
 	if (giocharmap >= IOCHM_ASCII)
 	{
@@ -342,17 +352,29 @@ void putch(char c)
 
 void clrscr(void)
 {
+#if defined(__ATARI__)
+	putrch(ATASCII_CLEAR);
+#else
 	putrch(147);
+#endif
 }
 
 void textcursor(bool show)
 {
+#if defined(__ATARI__)
+	*(volatile char *)ATARI_CRSINH = show ? 0 : 1;
+#else
 	*(volatile char *)0xcc = show ? 0 : 1;
+#endif
 }
 
 void gotoxy(char cx, char cy)
 {
-#if defined(__CBMPET__)
+#if defined(__ATARI__)
+	*(volatile char *)ATARI_ROWCRS = cy;
+	*(volatile char *)ATARI_COLCRS = cx;
+	*(volatile char *)(ATARI_COLCRS + 1) = 0;
+#elif defined(__CBMPET__)
 #define CURS_X 0xc6
 #define CURS_Y 0xd8
 #define SCREEN_PTR 0xc4
@@ -405,7 +427,9 @@ void revers(char r)
 
 char wherex(void)
 {
-#if defined(__C128__) || defined(__C128B__) || defined(__C128E__)
+#if defined(__ATARI__)
+	return *(volatile char *)ATARI_COLCRS;
+#elif defined(__C128__) || defined(__C128B__) || defined(__C128E__)
 	return *(volatile char *)0xec;
 #elif defined(__PLUS4__)
 	return *(volatile char *)0xca;	
@@ -416,7 +440,9 @@ char wherex(void)
 
 char wherey(void)
 {
-#if defined(__C128__) || defined(__C128B__) || defined(__C128E__)
+#if defined(__ATARI__)
+	return *(volatile char *)ATARI_ROWCRS;
+#elif defined(__C128__) || defined(__C128B__) || defined(__C128E__)
 	return *(volatile char *)0xeb;
 #elif defined(__PLUS4__)
 	return *(volatile char *)0xcd;	
