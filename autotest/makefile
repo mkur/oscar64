@@ -1,8 +1,8 @@
-SRCS=$(filter-out ambiguousoverload_trigger.c opp_part1.cpp opp_part2.cpp, $(wildcard *.c *.cpp))
+SRCS=$(filter-out ambiguousoverload_trigger.c atari_stdio_test.c opp_part1.cpp opp_part2.cpp, $(wildcard *.c *.cpp))
 EXES=$(patsubst %.c,%,$(SRCS))
 EXES:=$(patsubst %.cpp,%,$(EXES))
 
-all: $(EXES) diskimagefulltest atarixexformattest
+all: $(EXES) diskimagefulltest atarixexformattest ataristdiotest
 
 DISK_FULL_RESOURCE=../samples/resources/blumba2.bin
 DISK_FULL_FILES=$(foreach n,1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18,-f=$(DISK_FULL_RESOURCE))
@@ -28,6 +28,12 @@ atarixexformattest:
 	fi
 	@cmp atari_xex_default.xex atari_xex_explicit.xex
 	@$(RM) atari_xex_default.* atari_xex_explicit.*
+
+.PHONY: ataristdiotest
+ataristdiotest:
+	@$(OSCAR64_CC) -tm=atari -n -O0 -o=atari_stdio_o0.out atari_stdio_test.c
+	@$(OSCAR64_CC) -tm=atari -n -O2 -o=atari_stdio_o2.out atari_stdio_test.c
+	@$(RM) atari_stdio_o0.* atari_stdio_o2.*
 
 %: %.c
 	$(OSCAR64_CC) -ea -g -bc $<

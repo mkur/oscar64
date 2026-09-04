@@ -975,11 +975,11 @@ void cwin_console_get_string(CharWin * win, char * chars, char size)
 	chars[i] = 0;	
 }
 
-char * sformat(char * buff, const char * fmt, int * fps, bool print);
+char * sformatstr(char * buff, const char * fmt, int * fps);
 
 void cwin_console_printf(CharWin * win, char color, const char * fmt, ...)
 {
 	char	buff[200];
-	sformat(buff, fmt, (int *)&fmt + 1, false);
+	sformatstr(buff, fmt, (int *)&fmt + 1);
 	cwin_console_write_string(win, buff, color);
 }

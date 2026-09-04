@@ -100,6 +100,8 @@ install: compiler
 	$(INSTALL_DATA) $(wildcard $(project_dir)/include/*.h $(project_dir)/include/*.c) $(DESTDIR)$(includedir)/oscar64
 	@$(MKDIR_PARENT) $(DESTDIR)$(includedir)/oscar64/audio
 	$(INSTALL_DATA) $(wildcard $(project_dir)/include/audio/*.h $(project_dir)/include/audio/*.c) $(DESTDIR)$(includedir)/oscar64/audio
+	@$(MKDIR_PARENT) $(DESTDIR)$(includedir)/oscar64/atari
+	$(INSTALL_DATA) $(wildcard $(project_dir)/include/atari/*.h $(project_dir)/include/atari/*.c) $(DESTDIR)$(includedir)/oscar64/atari
 	@$(MKDIR_PARENT) $(DESTDIR)$(includedir)/oscar64/c64
 	$(INSTALL_DATA) $(wildcard $(project_dir)/include/c64/*.h $(project_dir)/include/c64/*.c) $(DESTDIR)$(includedir)/oscar64/c64
 	@$(MKDIR_PARENT) $(DESTDIR)$(includedir)/oscar64/c128

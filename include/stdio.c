@@ -348,7 +348,7 @@ char nformf(const sinfo * si, char * str, float f, char type)
 	return d;
 }
 
-char * sformat(char * buff, const char * fmt, int * fps, bool print)
+char * sformat(char * buff, const char * fmt, int * fps, bool print, putstrfn putstr, void * handle)
 {
 	const char	*	p = fmt;
 	char 	* 	bp = buff;
@@ -365,7 +365,7 @@ char * sformat(char * buff, const char * fmt, int * fps, bool print)
 				if (print)
 				{
 					bp[bi] = 0;
-					puts(bp);
+					handle = putstr(handle, bp);
 				}
 				else
 					bp += bi;
@@ -494,10 +494,10 @@ char * sformat(char * buff, const char * fmt, int * fps, bool print)
 					if (bi)
 					{
 						bp[bi] = 0;
-						puts(bp);
+						handle = putstr(handle, bp);
 						bi = 0;
 					}
-					puts(sp);
+					handle = putstr(handle, sp);
 				}
 				else
 				{
@@ -532,7 +532,7 @@ char * sformat(char * buff, const char * fmt, int * fps, bool print)
 				if (print)
 				{
 					bp[bi] = 0;
-					puts(bp);
+					handle = putstr(handle, bp);
 				}
 				else
 					bp += bi;
@@ -544,7 +544,7 @@ char * sformat(char * buff, const char * fmt, int * fps, bool print)
 	if (bi)
 	{
 		if (print)
-			puts(bp);
+		handle = putstr(handle, bp);
 		else
 			bp += bi;
 	}
@@ -552,27 +552,32 @@ char * sformat(char * buff, const char * fmt, int * fps, bool print)
 	return bp;
 }
 
+char * sformatstr(char * buff, const char * fmt, int * fps)
+{
+	return sformat(buff, fmt, fps, false, nullptr, nullptr);
+}
+
 void printf(const char * fmt, ...)
 {
 	char	buff[50];
-	sformat(buff, fmt, (int *)&fmt + 1, true);
+	sformat(buff, fmt, (int *)&fmt + 1, true, putstrio, nullptr);
 }
 
 int sprintf(char * str, const char * fmt, ...)
 {
-	char * d = sformat(str, fmt, (int *)&fmt + 1, false);
+	char * d = sformatstr(str, fmt, (int *)&fmt + 1);
 	return d - str;
 }
 
 void vprintf(const char * fmt, va_list vlist)
 {
 	char	buff[50];
-	sformat(buff, fmt, (int *)vlist, true);
+	sformat(buff, fmt, (int *)vlist, true, putstrio, nullptr);
 }
 
 int vsprintf(char * str, const char * fmt, va_list vlist)
 {
-	char * d = sformat(str, fmt, (int *)vlist, false);
+	char * d = sformatstr(str, fmt, (int *)vlist);
 	return d - str;
 }
 
@@ -1181,7 +1186,7 @@ int fprintf( FILE * stream, const char* format, ... )
 	char	buff[50];
 	if (stream->fnum < 0 || krnio_chkout(stream->fnum))
 	{
-		sformat(buff, format, (int *)&format + 1, true);
+		sformat(buff, format, (int *)&format + 1, true, putstrio, nullptr);
 		krnio_clrchn();
 		return 0;
 	}
@@ -1209,5 +1214,241 @@ int fscanf( FILE *stream, const char *format, ... )
 		return -1;
 }
 
-#endif
+#elif defined(__ATARI__)
+#include <atari/cio.h>
 
+
+struct FILE
+{
+	signed char	fnum;
+	bool		text;
+};
+
+FILE	files[FOPEN_MAX];
+FILE 	stdio_file = {-1, true};
+
+FILE * stdin = &stdio_file;
+FILE * stdout = &stdio_file;
+
+static char atari_file_mode(const char * mode)
+{
+	char cmode;
+	if (mode[0] == 'r' || mode[0] == 'R')
+		cmode = ACIO_MODE_READ;
+	else if (mode[0] == 'w' || mode[0] == 'W')
+		cmode = ACIO_MODE_WRITE;
+	else if (mode[0] == 'a' || mode[0] == 'A')
+		cmode = ACIO_MODE_APPEND;
+	else
+		return 0;
+
+	while (*++mode)
+	{
+		if (*mode == '+')
+			cmode |= ACIO_MODE_UPDATE;
+	}
+	return cmode;
+}
+
+static bool atari_file_text(const char * mode)
+{
+	while (*mode)
+	{
+		if (*mode == 'b' || *mode == 'B')
+			return false;
+		mode++;
+	}
+	return true;
+}
+
+FILE * fopen(const char * fname, const char * mode)
+{
+	char cmode = atari_file_mode(mode);
+	if (!cmode)
+		return nullptr;
+
+	char fi = 0;
+	while (fi < FOPEN_MAX && files[fi].fnum)
+		fi++;
+	if (fi == FOPEN_MAX)
+		return nullptr;
+
+	char channel = 1;
+	while (channel < ACIO_CHANNELS && acio_is_open(channel))
+		channel++;
+	if (channel == ACIO_CHANNELS)
+		return nullptr;
+
+	char length = 0;
+	bool device = false;
+	while (fname[length] && length < FILENAME_MAX)
+	{
+		if (fname[length] == ':')
+			device = true;
+		length++;
+	}
+	if (fname[length])
+		return nullptr;
+
+	char aname[FILENAME_MAX + 3];
+	char ai = 0;
+	if (!device)
+	{
+		aname[ai++] = 'D';
+		aname[ai++] = ':';
+	}
+	for(char i = 0; i < length; i++)
+		aname[ai++] = fname[i];
+	aname[ai] = 0;
+
+	if (acio_open(channel, aname, cmode))
+	{
+		files[fi].fnum = channel;
+		files[fi].text = atari_file_text(mode);
+		return files + fi;
+	}
+	return nullptr;
+}
+
+int fclose(FILE * fp)
+{
+	if (fp->fnum <= 0)
+		return EOF;
+
+	bool success = acio_close(fp->fnum);
+	fp->fnum = 0;
+	return success ? 0 : EOF;
+}
+
+int fgetc(FILE* stream)
+{
+	if (stream->fnum < 0)
+		return getpch();
+
+	int c = acio_getc(stream->fnum);
+	if (stream->text && c == 0x9b)
+		return '\n';
+	return c;
+}
+
+char* fgets(char* s, int n, FILE* stream)
+{
+	if (!s || n <= 1)
+		return nullptr;
+
+	int i = 0, c;
+	while (i + 1 < n && (c = fgetc(stream)) >= 0)
+	{
+		s[i++] = c;
+		if (c == '\n')
+			break;
+	}
+	s[i] = 0;
+	return i ? s : nullptr;
+}
+
+int fputc(int c, FILE* stream)
+{
+	if (stream->fnum < 0)
+	{
+		putpch(c);
+		return (unsigned char)c;
+	}
+
+	if (stream->text && c == '\n')
+		c = 0x9b;
+	return acio_putc(stream->fnum, c);
+}
+
+int fputs(const char* s, FILE* stream)
+{
+	int i = 0;
+	while (s[i])
+	{
+		if (fputc(s[i], stream) < 0)
+			return EOF;
+		i++;
+	}
+	return i;
+}
+
+int feof(FILE * stream)
+{
+	return stream->fnum > 0 && acio_status(stream->fnum) == ACIO_ERROR_EOF;
+}
+
+size_t fread( void * buffer, size_t size, size_t count, FILE * stream )
+{
+	if (!size || !count || stream->fnum < 0)
+		return 0;
+
+	int total = size * count;
+	if (!stream->text)
+	{
+		int actual = acio_read(stream->fnum, buffer, total);
+		return actual > 0 ? actual / size : 0;
+	}
+
+	char * data = (char *)buffer;
+	int i = 0, c;
+	while (i < total && (c = fgetc(stream)) >= 0)
+		data[i++] = c;
+	return i / size;
+}
+
+size_t fwrite( const void* buffer, size_t size, size_t count, FILE* stream )
+{
+	if (!size || !count || stream->fnum < 0)
+		return 0;
+
+	int total = size * count;
+	if (!stream->text)
+	{
+		int actual = acio_write(stream->fnum, buffer, total);
+		return actual > 0 ? actual / size : 0;
+	}
+
+	const char * data = (const char *)buffer;
+	int i = 0;
+	while (i < total && fputc(data[i], stream) >= 0)
+		i++;
+	return i / size;
+}
+
+struct atari_fprint_handle
+{
+	FILE *	stream;
+	int		count;
+	bool	failed;
+};
+
+void * atari_fprint_puts(void * handle, const char * str)
+{
+	atari_fprint_handle * fh = (atari_fprint_handle *)handle;
+	int count = fputs(str, fh->stream);
+	if (count < 0)
+		fh->failed = true;
+	else
+		fh->count += count;
+	return handle;
+}
+
+int fprintf( FILE * stream, const char* format, ... )
+{
+	char buff[50];
+	atari_fprint_handle fh = {stream, 0, false};
+	sformat(buff, format, (int *)&format + 1, true, atari_fprint_puts, &fh);
+	return fh.failed ? EOF : fh.count;
+}
+
+int atari_fscanf_func(void * fparam)
+{
+	return fgetc((FILE *)fparam);
+}
+
+int fscanf( FILE *stream, const char *format, ... )
+{
+	return fpscanf(format, atari_fscanf_func, stream, (void **)((&format) + 1));
+}
+
+#endif
